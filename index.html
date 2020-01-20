@@ -9,6 +9,18 @@
     <script src="dist/app.js" defer></script>
   </head>
   <body>
+    <!-- the 'template' tag is vanilla html and specifically created to communicate
+    with js. It gives the following features:
+      - Script (<script>) in a <template> element is not executed immediately.
+      - Media content (<audio>, <video>, <img>) inside the template won't be loaded immedialtey.
+      - Instead they will be executed or loaded once they are inserted in the rendered DOM tree.
+      - querySelector() method calls and CSS selectors won't explore the content of a <template>,
+        but you can still access the elements inside by using querySelector() on its content property.
+      - With HTML5 template, you can access all its content in the form of a Document Fragment,
+        and insert it in the DOM tree using appendChild(), instead of modifying innerHTML.
+      - <template> elements can be placed in the <head> element.
+      - You access the template content as a string using .innerHTML or as a DocumentFragment using .content.
+    -->
     <template id="project-input">
       <form>
         <div class="form-control">
