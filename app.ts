@@ -21,6 +21,43 @@ function AutoBind(_:any, _2: string, descriptor: PropertyDescriptor): PropertyDe
     return autoBoundPropDescriptor;
 }
 
+interface IValidatable {
+    value: string | number,
+    required?: boolean,
+    maxLength?: number,
+    minLength?: number,
+    max?: number,
+    min?: number
+}
+
+function validateObject(validatableInput: IValidatable): boolean{
+    let isValid = true;
+
+    if(validatableInput.required){
+        isValid = isValid && validatableInput.value.toString().length !== 0;
+    }
+
+    if(validatableInput.min != null && typeof validatableInput.value === 'number'){
+        isValid = isValid && validatableInput.value >= validatableInput.min
+    }
+
+    if(validatableInput.max != null && typeof validatableInput.value === 'number'){
+        isValid = isValid && validatableInput.value <= validatableInput.max
+    }
+
+    if(validatableInput.minLength != null && typeof validatableInput.value === 'string'){
+        isValid = isValid && validatableInput.value.toString().length >= validatableInput.minLength
+    }
+
+    if(validatableInput.maxLength != null && typeof validatableInput.value === 'string'){
+        isValid = isValid && validatableInput.value.toString().length <= validatableInput.maxLength
+
+    }
+
+    return isValid;
+}
+
+
 class ProjectFormInput {
   // Encapsulating elements
   templateFormInputEl: HTMLTemplateElement;
@@ -67,25 +104,94 @@ class ProjectFormInput {
     private handleSubmit(event: Event) {
         // start with preventing sending of a HTTPRequest (and thus reloading of the page)
         event.preventDefault();
+        
+        let formInputValues = this.getFormInput();
+        if(Array.isArray(formInputValues)){
+            let title = formInputValues[0];
+            let description = formInputValues[1];
+            let people = formInputValues[2];
 
+            let createdProject = new Project(title, description, people);
+    
+            // validateInput
+            if (!validateObject({ value: title, required: true, minLength: 5, maxLength: 10 }) ||
+                !validateObject({ value: description, required: true, maxLength: 128 }) ||
+                !validateObject({ value: people, min: 3, max: 10 })){
+                alert('Invalid Input!');
+                return;
+            } else {
+                console.log(`Project created: ${createdProject.Title}`);
+                this.clearInput();
+            }
+        }
+    }
+
+    private getFormInput(): [string, string, number] | void {
         let title = this.titleInputEl.value;
         let description = this.descrTextAreaInputEl.value;
-        let people = this.peopleInputEl.value;
+        let peopleStr = this.peopleInputEl.value;
 
-        let project = new Project();
-        project.title = title;
-        project.description = description;
-        project.people = +people;
+        return [title, description, +peopleStr];
+    }
 
-        console.log(`Project created: ${project.title}`);
+    private clearInput(){
+        this.titleInputEl.value = '';
+        this.descrTextAreaInputEl.value = '';
+        this.peopleInputEl.value = '';
     }
 }
 
-class Project{
-    // Input element
-    title: string = '';
-    description: string = '';
-    people: number = 0;
+class Project {
+    private _title: string = '';
+
+    get Title() {
+        return this._title;
+    }
+
+    set Title(value: string){
+        if(value.length <= 0){
+            console.warn('Title must be > 0 characters long');
+            return;
+        }
+
+        this._title = value;
+    }
+
+    private _description: string;
+
+    get Description() {
+        return this._description;
+    }
+
+    set Description(value) {
+        if(value.length <= 0){
+            console.warn('Descr must be > 0 characters long');
+            return;
+        }
+
+        this._description = value;
+    }
+
+    private _people: number;
+
+    get People() {
+        return this._people;
+    }
+
+    set People(value) {
+        if(value >= 0){
+            console.warn('Only positive number of People allowed');
+            return;
+        }
+
+        this._people = value;
+    }
+
+    constructor(title: string, description: string, people: number) {
+        this._title = title;
+        this._description = description;
+        this._people = people;
+    }
 }
 
 const renderedFormInput = new ProjectFormInput();
