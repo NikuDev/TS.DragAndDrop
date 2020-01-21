@@ -1,17 +1,13 @@
-console.log('TS.DragAndDrop..!');
+console.log('TS.DragAndDrop - NK Version');
 
-/** Form that handles 'new project input' */
+/** template elements */
 const templProjectInput = document.getElementById("project-input")! as HTMLTemplateElement;
-/** <li> element to display a single project */
 const templSingleProject = document.getElementById("single-project")! as HTMLTemplateElement;
-/** <ul> element to display a list of all projects */
 const templProjectList = document.getElementById("project-list")! as HTMLTemplateElement;
 
-/** form input */
+/** form inputs */
 const inputTitle = document.getElementById("title")! as HTMLInputElement;
-/** form input */
 const inputDescription = document.getElementById("description")! as HTMLInputElement;
-/** form input */
 const inputPeople = document.getElementById("people")! as HTMLInputElement;
 
 /** main <div> for rendering the output of the .ts contents */
