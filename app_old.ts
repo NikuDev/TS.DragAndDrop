@@ -21,6 +21,6 @@ const divAppHost = document.getElementById("app")! as HTMLDivElement;
  */
 if('content' in document.createElement('template')){
     var clone = templProjectInput.content.cloneNode(true);
-
+    
     divAppHost.appendChild(clone);
 }
