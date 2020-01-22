@@ -205,7 +205,6 @@ class ProjectFormInput {
                 alert('Invalid Input!');
                 return;
             } else {
-                projectCollection.addProject(createdProject);
                 console.log(`Project created: ${createdProject.Title}`);
                 this.clearInput();
             }
@@ -285,3 +284,4 @@ const renderedFormInput = new ProjectFormInput();
 const activeProjectCollection: ProjectCollection = new ProjectCollection('active');
 const finishedProjectCollection: ProjectCollection = new ProjectCollection('finished');
 
+   
