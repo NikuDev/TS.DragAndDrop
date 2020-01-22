@@ -21,15 +21,6 @@ function AutoBind(_:any, _2: string, descriptor: PropertyDescriptor): PropertyDe
     return autoBoundPropDescriptor;
 }
 
-interface IValidatable {
-    value: string | number,
-    required?: boolean,
-    maxLength?: number,
-    minLength?: number,
-    max?: number,
-    min?: number
-}
-
 function validateObject(validatableInput: IValidatable): boolean{
     let isValid = true;
 
@@ -57,6 +48,15 @@ function validateObject(validatableInput: IValidatable): boolean{
     return isValid;
 }
 
+interface IValidatable {
+    value: string | number,
+    required?: boolean,
+    maxLength?: number,
+    minLength?: number,
+    max?: number,
+    min?: number
+}
+
 class ProjectCollection {
     templateProjectList: HTMLTemplateElement;
     templateSingleProject: HTMLTemplateElement;
@@ -78,7 +78,7 @@ class ProjectCollection {
         this.projectListSectionEl = importedNode.firstElementChild as HTMLElement;
 
         // let's apply a style based on whether the projectlist is 'active' or 'finished'
-        this.projectListSectionEl.id = `${type}-project`;
+        this.projectListSectionEl.id = `${type}-projects`;
 
         this.renderProjectList();
         this.renderContent();
