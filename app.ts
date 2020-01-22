@@ -1,5 +1,20 @@
 console.log("TS.DragAndDrop started!");
 
+/** To improve readability and typechecking, we'll
+ *  define an Enum for the status of a project (instead of 
+ *  using strings to define it)
+ */
+enum StatusEnum {
+    active,
+    finished
+}
+
+/** To improve readability and make it explicit,
+ *  we define a 'Listener' type that takes an Array of Project's
+ *  and does not return anything
+ */
+type Listener = (items: Project[]) => void;
+
 /** The global 'crud manager' for handling the content of the
  *  rendered project lists
  */
@@ -19,7 +34,7 @@ class ProjectStateManager {
 		return this._instance;
 	}
 
-	public addListener(listener: Function) {
+	public addListener(listener: Listener) {
 		this.listeners.push(listener);
 	}
 
@@ -172,9 +187,9 @@ class RenderedProjectList {
 	projectListSectionEl: HTMLElement;
 
 	// assigned project for the listener function
-	currentProjects: Project[] = [];
+	activeProjects: Project[] = [];
 
-	constructor(private type: "active" | "finished") {
+	constructor(private status: StatusEnum) {
 		// list template (div containing '<ul>' somewhere)
 		this.templateProjectList = document.getElementById(
 			"project-list"
@@ -192,7 +207,7 @@ class RenderedProjectList {
 		this.projectListSectionEl = importedNode.firstElementChild as HTMLElement;
 
 		// let's apply a style based on whether the projectlist is 'active' or 'finished'
-		this.projectListSectionEl.id = `${type}-projects`;
+		this.projectListSectionEl.id = `${StatusEnum[status]}-projects`;
 
 		/** we want to register the renderedElement as a subscribed 'listener' to when
 		 * the collection changes.
@@ -200,12 +215,30 @@ class RenderedProjectList {
 		 * we /know/ that the 'addListener' function in the stateManager will expect
 		 * a 'listenerFunction', that will ultimately be used to return the projects
 		 * to the listeners (this instance for example), that's why we can define 'projects'
-		 * with the correct returntype
+		 * with the correct returntype.
+         * 
+         * At this point, we are only interested in the 'active' projects, we could
+         * use a simple if(status = active), or use .filter on the collection and filter out
+         * the objects with status.Active;
 		 */
-		projectStateManager.addListener((projectsCopy: Project[]) => {
-			this.currentProjects = projectsCopy;
-			this.notifyProjectsChanged();
-		});
+        // if(status === StatusEnum.Active){
+        //     projectStateManager.addListener((projectsCopy: Project[]) => {
+        //         this.currentProjects = projectsCopy;
+        //         this.notifyProjectsChanged();
+        //     });
+        // }
+
+        projectStateManager.addListener((projectsCopy: Project[]) => {
+            const temp = projectsCopy.filter(proj => {
+                if(this.status === StatusEnum.active){
+                    return proj.Status === StatusEnum.active;
+                }
+
+                return proj.Status === StatusEnum.finished;
+            });
+            this.activeProjects = temp;
+            this.notifyProjectsChanged();
+        })
 
 		this.renderProjectList();
 		this.renderContent();
@@ -220,12 +253,12 @@ class RenderedProjectList {
 
 	private renderContent() {
 		/* to be able to access the <ul> later, we want to use a specific id (based on type in this case) */
-		const listId = `${this.type}-project-list`;
+		const listId = `${this.status}-project-list`;
 		/* get the first (and only) <ul> and set the id */
 		this.projectListSectionEl.querySelector("ul")!.id = listId;
 		/* set the header to the used type, i.e. 'ACTIVE PROJECTS' */
 		this.projectListSectionEl.querySelector("h2")!.textContent =
-			this.type.toString().toUpperCase() + " PROJECTS";
+			StatusEnum[this.status].toString().toUpperCase() + " PROJECTS";
 	}
 
 	/** this func should be called whenever the listener (this class) gets
@@ -234,11 +267,14 @@ class RenderedProjectList {
 	 * we know the id it's using - as defined in renderContent()
 	 */
 	private notifyProjectsChanged() {
-		const ulEl = document.getElementById(
-			`${this.type}-project-list`
-		)! as HTMLUListElement;
+        const ulEl = document.getElementById(`${this.status}-project-list`)! as HTMLUListElement;
+        /** for this small project, we can get away with clearing the <ul> before we start
+         *  adding all projects again (to prevent duplicates). In a bigger application this might
+         *  be performance-costly
+         */
+        ulEl.innerHTML = '';
 		/** we have the element, lets populate it with each project in the placedholder coll */
-		for (const proj of this.currentProjects) {
+		for (const proj of this.activeProjects) {
 			const liEl = document.createElement("li");
 			liEl.textContent = proj.Title;
 			ulEl.appendChild(liEl);
@@ -313,7 +349,7 @@ class RenderedProjectFormInput {
 			let description = formInputValues[1];
 			let people = formInputValues[2];
 
-			let createdProject = new Project(title, description, people);
+			let createdProject = new Project(title, description, people, StatusEnum.active);
 
 			// validateInput
 			if (
@@ -412,21 +448,32 @@ class Project {
 		}
 
 		this._people = value;
-	}
+    }
+    
+    // we could use a union with literal types, but this is a good opportunity for an Enum
+    // private _status: 'active' | 'finished';
+    private _status: StatusEnum;
 
-	constructor(title: string, description: string, people: number) {
+    get Status(){
+        return this._status;
+    }
+
+    set Status(value){
+        this._status = value;
+    }
+
+	constructor(title: string, description: string, people: number, type: StatusEnum) {
 		this._id = Math.random().toString();
 		this._title = title;
 		this._description = description;
-		this._people = people;
+        this._people = people;
+        this._status = type;
 	}
 }
 
 const renderedFormInput = new RenderedProjectFormInput();
 
-const activeProjectCollection: RenderedProjectList = new RenderedProjectList(
-	"active"
-);
-const finishedProjectCollection: RenderedProjectList = new RenderedProjectList(
-	"finished"
-);
+const activeProjectCollection: RenderedProjectList = 
+    new RenderedProjectList(StatusEnum.active);
+const finishedProjectCollection: RenderedProjectList =
+    new RenderedProjectList(StatusEnum.finished);
