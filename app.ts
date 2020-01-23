@@ -393,14 +393,12 @@ class RenderedProjectItem extends UIComponent<HTMLUListElement, HTMLLIElement>  
 	}
 
 	configure(){
-		// workaround for creating new lines in renderElement
-		this.uiElement.setAttribute('style', 'white-space: pre;');
 	}
 
 	renderElement(){
-		this.uiElement.textContent = `${this.project.Title}\r\n`;
-		this.uiElement.textContent += `Description: ${this.project.Description}\r\n`;
-		this.uiElement.textContent += `Number of people: ${this.project.People}\r\n`;
+		this.uiElement.querySelector('h2')!.textContent = `${this.project.Title}`;
+		this.uiElement.querySelector('h3')!.textContent = `${this.project.Description}`;
+		this.uiElement.querySelector('p')!.textContent = `Size of team: ${this.project.People}`;
 		this.hostElement.appendChild(this.uiElement);
 	}
 }
