@@ -15,7 +15,7 @@ enum StatusEnum {
  */
 type Listener<T> = (items: T[]) => void;
 
-class StateManager<T> {
+abstract class StateManager<T> {
 	protected listeners: Listener<T>[] = [];
 
 	public addListener(listener: Listener<T>) {
@@ -167,6 +167,21 @@ interface IValidatable {
 	min?: number;
 }
 
+// Drag & Drop interfaces
+interface IDraggable {
+	dragStartHandler(event: DragEvent): void;
+	dragEndHandler(event: DragEvent): void;
+}
+
+interface IDragTarget {
+	/** When a IDraggable hovers over a target (i.e. style changes) */
+	dragOverHandler(event: DragEvent): void;
+	/** Handling the drop (status update on the IDraggable etc.) */
+	dropHandler(event: DragEvent): void;
+	/** When a IDraggable leaves a target (i.e. style changes) */
+	dragLeaveHandler(event: DragEvent): void;
+}
+
 /** Can be used on any class that wants to be rendered in the DOM
  *  T = HostElement (i.e. HTMLDivElement)
  *  U = uiElement to be rendered (i.e. HTMLFormElement)
@@ -218,7 +233,9 @@ abstract class UIComponent<T extends HTMLElement, U extends HTMLElement> {
 /** An instance will render a <ul> Project list based
  *  on the <ul> outlined within the <template> tags
  */
-class RenderedProjectList extends UIComponent<HTMLDivElement, HTMLElement> {
+class RenderedProjectList
+		extends UIComponent<HTMLDivElement, HTMLElement>
+		implements IDragTarget {
 	// assigned project for the listener function
 	activeProjects: Project[] = [];
 
@@ -237,22 +254,26 @@ class RenderedProjectList extends UIComponent<HTMLDivElement, HTMLElement> {
 		 * a 'listenerFunction', that will ultimately be used to return the projects
 		 * to the listeners (this instance for example), that's why we can define 'projects'
 		 * with the correct returntype.
-         *
-         * At this point, we are only interested in the 'active' projects, we could
-         * use a simple if(status = active), or use .filter on the collection and filter out
-         * the objects with status.Active;
+		 *
+		 * At this point, we are only interested in the 'active' projects, we could
+		 * use a simple if(status = active), or use .filter on the collection and filter out
+		 * the objects with status.Active;
 		 */
-        projectStateManager.addListener((projectsCopy: Project[]) => {
-            const temp = projectsCopy.filter(proj => {
-                if(this.status === StatusEnum.active){
-                    return proj.Status === StatusEnum.active;
-                }
+		projectStateManager.addListener((projectsCopy: Project[]) => {
+			const temp = projectsCopy.filter(proj => {
+				if(this.status === StatusEnum.active){
+					return proj.Status === StatusEnum.active;
+				}
 
-                return proj.Status === StatusEnum.finished;
-            });
-            this.activeProjects = temp;
+				return proj.Status === StatusEnum.finished;
+			});
+			this.activeProjects = temp;
             this.notifyProjectsChanged();
-        })
+		})
+
+		this.uiElement.addEventListener('dragover', this.dragOverHandler);
+		this.uiElement.addEventListener('drop', this.dropHandler);
+		this.uiElement.addEventListener('dragleave', this.dragLeaveHandler);
 	}
 
 	renderElement() {
@@ -262,7 +283,7 @@ class RenderedProjectList extends UIComponent<HTMLDivElement, HTMLElement> {
 		this.uiElement.querySelector("ul")!.id = listId;
 		/* set the header to the used type, i.e. 'ACTIVE PROJECTS' */
 		this.uiElement.querySelector("h2")!.textContent =
-			StatusEnum[this.status].toString().toUpperCase() + " PROJECTS";
+		StatusEnum[this.status].toString().toUpperCase() + " PROJECTS";
 	}
 
 	/** this func should be called whenever the listener (this class) gets
@@ -271,10 +292,10 @@ class RenderedProjectList extends UIComponent<HTMLDivElement, HTMLElement> {
 	 * we know the id it's using - as defined in renderContent()
 	 */
 	private notifyProjectsChanged() {
-        const ulEl = document.getElementById(`${StatusEnum[this.status]}-project-list`)! as HTMLUListElement;
+		const ulEl = document.getElementById(`${StatusEnum[this.status]}-project-list`)! as HTMLUListElement;
         /** for this small project, we can get away with clearing the <ul> before we start
-         *  adding all projects again (to prevent duplicates). In a bigger application this might
-         *  be performance-costly
+		 *  adding all projects again (to prevent duplicates). In a bigger application this might
+		 *  be performance-costly
          */
 
 		ulEl.innerHTML = '';
@@ -282,6 +303,16 @@ class RenderedProjectList extends UIComponent<HTMLDivElement, HTMLElement> {
 		for (const proj of this.activeProjects) {
 			new RenderedProjectItem(proj, ulEl.id);
 		}
+	}
+
+	dragOverHandler(event: DragEvent): void {
+		console.warn('dragOverHandler triggered!');
+	}
+	dropHandler(event: DragEvent): void {
+		console.warn('dropHandler triggered!');
+	}
+	dragLeaveHandler(event: DragEvent): void {
+		console.warn('dragLeaveHandler triggered!');
 	}
 }
 
@@ -383,7 +414,9 @@ class RenderedProjectFormInput extends UIComponent<HTMLDivElement, HTMLFormEleme
 	}
 }
 
-class RenderedProjectItem extends UIComponent<HTMLUListElement, HTMLLIElement>  {
+class RenderedProjectItem
+		extends UIComponent<HTMLUListElement, HTMLLIElement>
+		implements IDraggable {
 
 	constructor(private project: Project, hostElementId: string){
 		super('single-project', hostElementId, 'beforeend', project.Id);
@@ -393,6 +426,9 @@ class RenderedProjectItem extends UIComponent<HTMLUListElement, HTMLLIElement>  
 	}
 
 	configure(){
+		// let's define the functions that should be triggered on certain events of this ui-item
+		this.uiElement.addEventListener('dragstart', this.dragStartHandler);
+		this.uiElement.addEventListener('dragend', this.dragEndHandler);
 	}
 
 	renderElement(){
@@ -402,6 +438,16 @@ class RenderedProjectItem extends UIComponent<HTMLUListElement, HTMLLIElement>  
 		this.uiElement.querySelector('p')!.textContent =
 			noPeople === 1 ? `${noPeople} person assigned` : `${noPeople} persons assigned`;
 		this.hostElement.appendChild(this.uiElement);
+	}
+
+	@AutoBind
+	dragStartHandler(event: DragEvent): void {
+		console.warn('dragStartHandler triggered!');
+	}
+
+	@AutoBind
+	dragEndHandler(event: DragEvent): void {
+		console.warn('dragEndHandler triggered!');
 	}
 }
 
