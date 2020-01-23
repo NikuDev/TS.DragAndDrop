@@ -1,7 +1,7 @@
 console.log("TS.DragAndDrop started!");
 
 /** To improve readability and typechecking, we'll
- *  define an Enum for the status of a project (instead of 
+ *  define an Enum for the status of a project (instead of
  *  using strings to define it)
  */
 enum StatusEnum {
@@ -97,8 +97,8 @@ class ProjectStateManager {
  */
 const projectStateManager: ProjectStateManager = ProjectStateManager.getInstance();
 
-/*  Autobind decorator, this is to REPLACE having to call '.bind(this)' on handlers 
-   
+/*  Autobind decorator, this is to REPLACE having to call '.bind(this)' on handlers
+
     this.formEl.bind(this) <- is important so we bind the 'this' that will be used
     in the future (i.e. inside the 'handleSubmit' function), will be the same
     context as in the line below (the instance of ProjectFormInput). If we don't
@@ -186,9 +186,9 @@ abstract class UIComponent<T extends HTMLElement, U extends HTMLElement> {
     uiElement: U;
 
     constructor(
-        templateElementId: string, 
+        templateElementId: string,
         hostElementId: string,
-        insertAdjacent: 'afterbegin' | 'beforeend',
+        insertionPoint: 'afterbegin' | 'beforeend',
         uiElementId?: string // optional
     ) {
 		this.templateElement = document.getElementById(templateElementId)! as HTMLTemplateElement;
@@ -203,51 +203,42 @@ abstract class UIComponent<T extends HTMLElement, U extends HTMLElement> {
         if(uiElementId)
             this.uiElement.id = uiElementId;
 
-        this.renderProjectList(insertAdjacent);
+        this.addUIElementToHost(insertionPoint);
     }
 
-	private renderProjectList(insertAdjacent: 'afterbegin' | 'beforeend') {
+	private addUIElementToHost(insertionPoint: 'afterbegin' | 'beforeend') {
 		this.hostElement.insertAdjacentElement(
-			insertAdjacent,
+			insertionPoint,
 			this.uiElement
 		);
 	}
+
+	/** Separate function for adding additional functionality to the element
+	 *  we want to render (i.e. adding event listeners)
+	 */
+	abstract configure(): void;
+
+	/** Separate function to render the element in the DOM (i.e. inserting it
+	 *  in the host element)
+	 */
+	abstract renderElement(): void;
 }
 
 /** An instance will render a <ul> Project list based
  *  on the <ul> outlined within the <template> tags
  */
-class RenderedProjectList {
-	templateProjectList: HTMLTemplateElement;
-	templateSingleProject: HTMLTemplateElement;
-	divAppHostEl: HTMLDivElement;
-
-	// there is no explicit 'HTMLSectionElement', so we can use HTMLElement
-	projectListSectionEl: HTMLElement;
-
+class RenderedProjectList extends UIComponent<HTMLDivElement, HTMLElement> {
 	// assigned project for the listener function
 	activeProjects: Project[] = [];
 
 	constructor(private status: StatusEnum) {
-		// list template (div containing '<ul>' somewhere)
-		this.templateProjectList = document.getElementById(
-			"project-list"
-		)! as HTMLTemplateElement;
-		// single list element template ('<li>')
-		this.templateSingleProject = document.getElementById(
-			"single-project"
-		)! as HTMLTemplateElement;
-		this.divAppHostEl = document.getElementById("app")! as HTMLDivElement;
+		super('project-list', 'app', 'beforeend', `${StatusEnum[status]}-projects`);
 
-		const importedNode = document.importNode(
-			this.templateProjectList.content,
-			true
-		);
-		this.projectListSectionEl = importedNode.firstElementChild as HTMLElement;
+		this.configure();
+		this.renderElement();
+	}
 
-		// let's apply a style based on whether the projectlist is 'active' or 'finished'
-		this.projectListSectionEl.id = `${StatusEnum[status]}-projects`;
-
+	configure(){
 		/** we want to register the renderedElement as a subscribed 'listener' to when
 		 * the collection changes.
 		 *
@@ -255,18 +246,11 @@ class RenderedProjectList {
 		 * a 'listenerFunction', that will ultimately be used to return the projects
 		 * to the listeners (this instance for example), that's why we can define 'projects'
 		 * with the correct returntype.
-         * 
+         *
          * At this point, we are only interested in the 'active' projects, we could
          * use a simple if(status = active), or use .filter on the collection and filter out
          * the objects with status.Active;
 		 */
-        // if(status === StatusEnum.Active){
-        //     projectStateManager.addListener((projectsCopy: Project[]) => {
-        //         this.currentProjects = projectsCopy;
-        //         this.notifyProjectsChanged();
-        //     });
-        // }
-
         projectStateManager.addListener((projectsCopy: Project[]) => {
             const temp = projectsCopy.filter(proj => {
                 if(this.status === StatusEnum.active){
@@ -278,25 +262,15 @@ class RenderedProjectList {
             this.activeProjects = temp;
             this.notifyProjectsChanged();
         })
-
-		this.renderProjectList();
-		this.renderContent();
 	}
 
-	private renderProjectList() {
-		this.divAppHostEl.insertAdjacentElement(
-			"beforeend",
-			this.projectListSectionEl
-		);
-	}
-
-	private renderContent() {
+	renderElement() {
 		/* to be able to access the <ul> later, we want to use a specific id (based on type in this case) */
 		const listId = `${this.status}-project-list`;
 		/* get the first (and only) <ul> and set the id */
-		this.projectListSectionEl.querySelector("ul")!.id = listId;
+		this.uiElement.querySelector("ul")!.id = listId;
 		/* set the header to the used type, i.e. 'ACTIVE PROJECTS' */
-		this.projectListSectionEl.querySelector("h2")!.textContent =
+		this.uiElement.querySelector("h2")!.textContent =
 			StatusEnum[this.status].toString().toUpperCase() + " PROJECTS";
 	}
 
@@ -324,12 +298,7 @@ class RenderedProjectList {
 /** An instance will render a <form> including handling of the submit button
  *  based on the <form> outlined within the <template> tags
  */
-class RenderedProjectFormInput {
-	// Encapsulating elements
-	templateFormInputEl: HTMLTemplateElement;
-	formEl: HTMLFormElement;
-	divAppHostEl: HTMLDivElement; // <- using the more generic 'HTMLElement' would also be fine
-
+class RenderedProjectFormInput extends UIComponent<HTMLDivElement, HTMLFormElement>{
 	titleInputEl: HTMLInputElement;
 	descrTextAreaInputEl: HTMLInputElement;
 	peopleInputEl: HTMLInputElement;
@@ -338,43 +307,31 @@ class RenderedProjectFormInput {
 	 *  note: this should have some null checking in a real application
 	 */
 	constructor() {
-		this.templateFormInputEl = document.getElementById(
-			"project-input"
-		)! as HTMLTemplateElement;
-		this.divAppHostEl = document.getElementById("app")! as HTMLDivElement;
+		super('project-input', 'app', 'afterbegin', 'user-input');
 
-		const importedNode = document.importNode(
-			this.templateFormInputEl.content,
-			true
-		);
-		this.formEl = importedNode.firstElementChild as HTMLFormElement;
-		/** 'user-input' is a defined style in the app.css, we apply styling by
-		 * setting the id here, but it could also be hard-coded in the html
-		 */
-		this.formEl.id = "user-input";
-
-		this.titleInputEl = this.formEl.querySelector(
+		this.titleInputEl = this.uiElement.querySelector(
 			"#title"
 		) as HTMLInputElement;
-		this.descrTextAreaInputEl = this.formEl.querySelector(
+		this.descrTextAreaInputEl = this.uiElement.querySelector(
 			"#description"
 		) as HTMLInputElement;
-		this.peopleInputEl = this.formEl.querySelector(
+		this.peopleInputEl = this.uiElement.querySelector(
 			"#people"
 		) as HTMLInputElement;
 
-		this.registerHandlers();
+		this.configure();
 
 		// We've finished setting everything we need for the form, render it
-		this.renderFormElement();
+		this.renderElement();
 	}
 
-	private registerHandlers() {
-		this.formEl.addEventListener("submit", this.handleSubmit);
+	/** Adding (optional) information to the element we want to render */
+	configure() {
+		this.uiElement.addEventListener("submit", this.handleSubmit);
 	}
 
-	private renderFormElement() {
-		this.divAppHostEl.insertAdjacentElement("afterbegin", this.formEl);
+	renderElement() {
+		this.hostElement.insertAdjacentElement("afterbegin", this.uiElement);
 	}
 
 	@AutoBind
@@ -487,10 +444,8 @@ class Project {
 		}
 
 		this._people = value;
-    }
-    
-    // we could use a union with literal types, but this is a good opportunity for an Enum
-    // private _status: 'active' | 'finished';
+	}
+
     private _status: StatusEnum;
 
     get Status(){
@@ -512,7 +467,7 @@ class Project {
 
 const renderedFormInput = new RenderedProjectFormInput();
 
-const activeProjectCollection: RenderedProjectList = 
+const activeProjectCollection: RenderedProjectList =
     new RenderedProjectList(StatusEnum.active);
 const finishedProjectCollection: RenderedProjectList =
     new RenderedProjectList(StatusEnum.finished);
