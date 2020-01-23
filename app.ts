@@ -280,7 +280,7 @@ class RenderedProjectList extends UIComponent<HTMLDivElement, HTMLElement> {
 		ulEl.innerHTML = '';
 		/** we have the element, lets populate it with each project in the placedholder coll */
 		for (const proj of this.activeProjects) {
-			new RenderedProjectItem(proj, this.status);
+			new RenderedProjectItem(proj, ulEl.id);
 		}
 	}
 }
@@ -350,7 +350,7 @@ class RenderedProjectFormInput extends UIComponent<HTMLDivElement, HTMLFormEleme
 					required: true,
 					maxLength: 128
 				}) ||
-				!validateObject({ value: people, min: 3, max: 10 })
+				!validateObject({ value: people, min: 0, max: 10 })
 			) {
 				alert("Invalid Input!");
 				return;
@@ -385,8 +385,8 @@ class RenderedProjectFormInput extends UIComponent<HTMLDivElement, HTMLFormEleme
 
 class RenderedProjectItem extends UIComponent<HTMLUListElement, HTMLLIElement>  {
 
-	constructor(private project: Project, status: StatusEnum){
-		super('single-project', `${StatusEnum[status]}-project-list`, 'beforeend');
+	constructor(private project: Project, hostElementId: string){
+		super('single-project', hostElementId, 'beforeend', project.Id);
 
 		this.configure();
 		this.renderElement();
@@ -396,9 +396,11 @@ class RenderedProjectItem extends UIComponent<HTMLUListElement, HTMLLIElement>  
 	}
 
 	renderElement(){
+		let noPeople = this.project.People;
 		this.uiElement.querySelector('h2')!.textContent = `${this.project.Title}`;
 		this.uiElement.querySelector('h3')!.textContent = `${this.project.Description}`;
-		this.uiElement.querySelector('p')!.textContent = `Size of team: ${this.project.People}`;
+		this.uiElement.querySelector('p')!.textContent =
+			noPeople === 1 ? `${noPeople} person assigned` : `${noPeople} persons assigned`;
 		this.hostElement.appendChild(this.uiElement);
 	}
 }
