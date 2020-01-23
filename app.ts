@@ -50,19 +50,7 @@ class ProjectStateManager extends StateManager<Project> {
 				/** (using .slice() ensures only a COPY of the array is used) */
 				listener(this.projects.slice());
 			}
-
-			// this.appendProjectToRenderedList();
 		}
-	}
-
-	appendProjectToRenderedList() {
-		// this.renderedProjectList.addStuffToTheList
-		// var clone = this.templateProjectList.content.cloneNode(true)!;
-		// let liEl = clone.firstChild as HTMLUListElement;
-		// liEl.textContent = 'hello World!';
-		// var ulHtmlEl = this.divAppHostEl.querySelector('ul')!;
-		// // ulHtmlEl.textContent = 'Hello World!';
-		// ulHtmlEl.appendChild(liEl);
 	}
 
 	public removeProject(project: Project) {
@@ -86,6 +74,7 @@ class ProjectStateManager extends StateManager<Project> {
 				proj.Description === project.Description &&
 				proj.People === project.People
 			) {
+				console.warn('This project already exists!')
 				return true;
 			}
 		}
