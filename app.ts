@@ -271,7 +271,7 @@ class RenderedProjectList extends UIComponent<HTMLDivElement, HTMLElement> {
 	 * we know the id it's using - as defined in renderContent()
 	 */
 	private notifyProjectsChanged() {
-        const ulEl = document.getElementById(`${this.status}-project-list`)! as HTMLUListElement;
+        const ulEl = document.getElementById(`${StatusEnum[this.status]}-project-list`)! as HTMLUListElement;
         /** for this small project, we can get away with clearing the <ul> before we start
          *  adding all projects again (to prevent duplicates). In a bigger application this might
          *  be performance-costly
