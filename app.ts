@@ -175,6 +175,46 @@ interface IValidatable {
 	min?: number;
 }
 
+/** UIComponent is a generic abastract class that can be used on any class that
+ *  wants to render something in the DOM, but by using the generic types
+ *  we do force an implementation to make the type explicit (to be able
+ *  to use the element-specific functionality)
+ */
+abstract class UIComponent<T extends HTMLElement, U extends HTMLElement> {
+    templateElement: HTMLTemplateElement;
+    hostElement: T;
+    uiElement: U;
+
+    constructor(
+        templateElementId: string, 
+        hostElementId: string,
+        insertAdjacent: 'afterbegin' | 'beforeend',
+        uiElementId?: string // optional
+    ) {
+		this.templateElement = document.getElementById(templateElementId)! as HTMLTemplateElement;
+		this.hostElement = document.getElementById(hostElementId)! as T;
+        
+		const importedNode = document.importNode(
+			this.templateElement.content,
+			true
+		);
+        this.uiElement = importedNode.firstElementChild as U;
+        
+        if(uiElementId)
+            this.uiElement.id = uiElementId;
+            
+        this.renderProjectList(insertAdjacent);
+    }
+
+    
+	private renderProjectList(insertAdjacent: 'afterbegin' | 'beforeend') {
+		this.hostElement.insertAdjacentElement(
+			insertAdjacent,
+			this.uiElement
+		);
+	}
+}
+
 /** An instance will render a <ul> Project list based
  *  on the <ul> outlined within the <template> tags
  */
