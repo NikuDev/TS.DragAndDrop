@@ -193,20 +193,19 @@ abstract class UIComponent<T extends HTMLElement, U extends HTMLElement> {
     ) {
 		this.templateElement = document.getElementById(templateElementId)! as HTMLTemplateElement;
 		this.hostElement = document.getElementById(hostElementId)! as T;
-        
+
 		const importedNode = document.importNode(
 			this.templateElement.content,
 			true
 		);
         this.uiElement = importedNode.firstElementChild as U;
-        
+
         if(uiElementId)
             this.uiElement.id = uiElementId;
-            
+
         this.renderProjectList(insertAdjacent);
     }
 
-    
 	private renderProjectList(insertAdjacent: 'afterbegin' | 'beforeend') {
 		this.hostElement.insertAdjacentElement(
 			insertAdjacent,
