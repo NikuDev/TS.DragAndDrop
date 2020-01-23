@@ -13,18 +13,25 @@ enum StatusEnum {
  *  we define a 'Listener' type that takes an Array of Project's
  *  and does not return anything
  */
-type Listener = (items: Project[]) => void;
+type Listener<T> = (items: T[]) => void;
 
-/** The global 'crud manager' for handling the content of the
- *  rendered project lists
+class StateManager<T> {
+	protected listeners: Listener<T>[] = [];
+
+	public addListener(listener: Listener<T>) {
+		this.listeners.push(listener);
+	}
+}
+
+/** Holds the collection of <Project>'s and exposes
+ *  CRUD functionality regarding <Project>'s
  */
-class ProjectStateManager {
+class ProjectStateManager extends StateManager<Project> {
 	private projects: Project[] = [];
-	private listeners: Function[] = [];
 	private static _instance: ProjectStateManager;
 
 	// declare the ctor as private for the singleton pattern
-	private constructor() {}
+	private constructor() { super(); }
 
 	public static getInstance(): ProjectStateManager {
 		if (!ProjectStateManager._instance) {
@@ -32,10 +39,6 @@ class ProjectStateManager {
 		}
 
 		return this._instance;
-	}
-
-	public addListener(listener: Listener) {
-		this.listeners.push(listener);
 	}
 
 	public addProject(project: Project) {
