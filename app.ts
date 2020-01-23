@@ -167,10 +167,9 @@ interface IValidatable {
 	min?: number;
 }
 
-/** UIComponent is a generic abastract class that can be used on any class that
- *  wants to render something in the DOM, but by using the generic types
- *  we do force an implementation to make the type explicit (to be able
- *  to use the element-specific functionality)
+/** Can be used on any class that wants to be rendered in the DOM
+ *  T = HostElement (i.e. HTMLDivElement)
+ *  U = uiElement to be rendered (i.e. HTMLFormElement)
  */
 abstract class UIComponent<T extends HTMLElement, U extends HTMLElement> {
     templateElement: HTMLTemplateElement;
@@ -258,7 +257,7 @@ class RenderedProjectList extends UIComponent<HTMLDivElement, HTMLElement> {
 
 	renderElement() {
 		/* to be able to access the <ul> later, we want to use a specific id (based on type in this case) */
-		const listId = `${this.status}-project-list`;
+		const listId = `${StatusEnum[this.status]}-project-list`;
 		/* get the first (and only) <ul> and set the id */
 		this.uiElement.querySelector("ul")!.id = listId;
 		/* set the header to the used type, i.e. 'ACTIVE PROJECTS' */
@@ -277,12 +276,11 @@ class RenderedProjectList extends UIComponent<HTMLDivElement, HTMLElement> {
          *  adding all projects again (to prevent duplicates). In a bigger application this might
          *  be performance-costly
          */
-        ulEl.innerHTML = '';
+
+		ulEl.innerHTML = '';
 		/** we have the element, lets populate it with each project in the placedholder coll */
 		for (const proj of this.activeProjects) {
-			const liEl = document.createElement("li");
-			liEl.textContent = proj.Title;
-			ulEl.appendChild(liEl);
+			new RenderedProjectItem(proj, this.status);
 		}
 	}
 }
@@ -382,6 +380,28 @@ class RenderedProjectFormInput extends UIComponent<HTMLDivElement, HTMLFormEleme
 		this.titleInputEl.value = "";
 		this.descrTextAreaInputEl.value = "";
 		this.peopleInputEl.value = "";
+	}
+}
+
+class RenderedProjectItem extends UIComponent<HTMLUListElement, HTMLLIElement>  {
+
+	constructor(private project: Project, status: StatusEnum){
+		super('single-project', `${StatusEnum[status]}-project-list`, 'beforeend');
+
+		this.configure();
+		this.renderElement();
+	}
+
+	configure(){
+		// workaround for creating new lines in renderElement
+		this.uiElement.setAttribute('style', 'white-space: pre;');
+	}
+
+	renderElement(){
+		this.uiElement.textContent = `${this.project.Title}\r\n`;
+		this.uiElement.textContent += `Description: ${this.project.Description}\r\n`;
+		this.uiElement.textContent += `Number of people: ${this.project.People}\r\n`;
+		this.hostElement.appendChild(this.uiElement);
 	}
 }
 
