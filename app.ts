@@ -1,5 +1,12 @@
 console.log("TS.DragAndDrop started!");
 
+function addDummyData(){
+	console.log('adding dummydata...');
+	projectStateManager.addProject(new Project('Javascript for Beginners', '10 hour class for the basics of JS', 5, StatusEnum.active));
+	projectStateManager.addProject(new Project('Python for Experts', '26 hour class for the basics of Python', 2, StatusEnum.active));
+	projectStateManager.addProject(new Project('.NET for Professionals', '100 day class for every aspect of the .NET framework', 10, StatusEnum.active));
+}
+
 /** To improve readability and typechecking, we'll
  *  define an Enum for the status of a project (instead of
  *  using strings to define it)
@@ -54,6 +61,22 @@ class ProjectStateManager extends StateManager<Project> {
 		if (indexToRemove > -1) {
 			this.projects.splice(indexToRemove, 1);
 			this.notifyProjectsChanged();
+		}
+	}
+
+	public switchProjectStatus(projectId: string){
+		const project = this.getProjectById(projectId);
+
+		if(project){
+			if(project.Status === StatusEnum.active){
+				project.Status = StatusEnum.finished;
+			} else {
+				project.Status = StatusEnum.active;
+			}
+
+			this.notifyProjectsChanged();
+		} else {
+			console.warn(`No Project found with id ${projectId}!`)
 		}
 	}
 
@@ -222,7 +245,7 @@ abstract class UIComponent<T extends HTMLElement, U extends HTMLElement> {
         if(uiElementId)
             this.uiElement.id = uiElementId;
 
-        this.addUIElementToHost(insertionPoint);
+		this.addUIElementToHost(insertionPoint);
     }
 
 	private addUIElementToHost(insertionPoint: 'afterbegin' | 'beforeend') {
@@ -291,16 +314,6 @@ class RenderedProjectList
 			this.activeProjects = temp;
             this.notifyProjectsChanged();
 		})
-
-		projectStateManager.addListener((projectsCopy: Project[]) => {
-			const temp = projectsCopy.filter(proj => {
-				if(this.status === StatusEnum.finished){
-					return proj.Status === StatusEnum.finished;
-				}
-
-				return proj.Status === StatusEnum.active;
-			})
-		})
 	}
 
 	renderElement() {
@@ -346,18 +359,10 @@ class RenderedProjectList
 
 	@AutoBind
 	dropHandler(event: DragEvent): void {
-		/** We now know which ProjectItem to switch */
-		console.log(event.dataTransfer!.getData('text/plain'));
-		console.warn('dropHandler triggered!');
-
+		/** We can find out which ProjectItem to switch by using the id */
 		const draggedProjectId = event.dataTransfer!.getData('text/plain');
 		if(draggedProjectId){
-			const draggedProject = projectStateManager.getProjectById(draggedProjectId);
-			if(draggedProject !== null){
-				projectStateManager.removeProject(draggedProject);
-				draggedProject.Status = this.status;
-				// projectStateManager.addProject(draggedProject);
-			}
+			projectStateManager.switchProjectStatus(draggedProjectId);
 		}
 
 		// to be sure remove the 'drag-in-progress' styling
@@ -471,9 +476,7 @@ class RenderedProjectFormInput extends UIComponent<HTMLDivElement, HTMLFormEleme
 	}
 }
 
-class RenderedProjectItem
-		extends UIComponent<HTMLUListElement, HTMLLIElement>
-		implements IDraggable {
+class RenderedProjectItem extends UIComponent<HTMLUListElement, HTMLLIElement> implements IDraggable {
 
 	constructor(private project: Project, hostElementId: string){
 		super('single-project', hostElementId, 'beforeend', project.Id);
