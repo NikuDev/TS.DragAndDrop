@@ -10,3 +10,5 @@ dragged and dropped into the 'Finished' list (moving it back to the 'Active' lis
 - generic types
 - interfaces
 - events and eventListeners
+
+![Drag and Drop UI](/TS.DragAndDrop-img.PNG)
