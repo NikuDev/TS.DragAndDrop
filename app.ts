@@ -247,6 +247,11 @@ class RenderedProjectList
 	}
 
 	configure(){
+
+		this.uiElement.addEventListener('dragover', this.dragOverHandler);
+		this.uiElement.addEventListener('dragleave', this.dragLeaveHandler);
+		this.uiElement.addEventListener('drop', this.dropHandler);
+
 		/** we want to register the renderedElement as a subscribed 'listener' to when
 		 * the collection changes.
 		 *
@@ -270,10 +275,6 @@ class RenderedProjectList
 			this.activeProjects = temp;
             this.notifyProjectsChanged();
 		})
-
-		this.uiElement.addEventListener('dragover', this.dragOverHandler);
-		this.uiElement.addEventListener('drop', this.dropHandler);
-		this.uiElement.addEventListener('dragleave', this.dragLeaveHandler);
 	}
 
 	renderElement() {
@@ -305,14 +306,18 @@ class RenderedProjectList
 		}
 	}
 
+	@AutoBind
 	dragOverHandler(event: DragEvent): void {
-		console.warn('dragOverHandler triggered!');
+		const ulEl = this.uiElement.querySelector('ul')!;
+		ulEl.classList.add('droppable');
 	}
 	dropHandler(event: DragEvent): void {
 		console.warn('dropHandler triggered!');
 	}
+	@AutoBind
 	dragLeaveHandler(event: DragEvent): void {
-		console.warn('dragLeaveHandler triggered!');
+		const ulEl = this.uiElement.querySelector('ul')!;
+		ulEl.classList.remove('droppable');
 	}
 }
 
