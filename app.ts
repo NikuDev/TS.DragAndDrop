@@ -49,7 +49,7 @@ class ProjectStateManager extends StateManager<Project> {
 	}
 
 	public addProject(project: Project) {
-		if (!this.hasProject(project)) {
+		if (!this.projects.find(proj => proj.Id === project.Id)) {
 			this.projects.push(project);
 			this.notifyProjectsChanged();
 		}
@@ -64,50 +64,17 @@ class ProjectStateManager extends StateManager<Project> {
 		}
 	}
 
-	public switchProjectStatus(projectId: string){
-		const project = this.getProjectById(projectId);
+	public evaluateProjectMove(projectId: string, status: StatusEnum){
+		const projectToEvaluate = this.projects.find(proj => proj.Id === projectId);
 
-		if(project){
-			if(project.Status === StatusEnum.active){
-				project.Status = StatusEnum.finished;
-			} else {
-				project.Status = StatusEnum.active;
-			}
-
+		if(projectToEvaluate){
+			projectToEvaluate.Status = status;
 			this.notifyProjectsChanged();
-		} else {
-			console.warn(`No Project found with id ${projectId}!`)
 		}
-	}
-
-	public getProjectById(id: string): Project | null{
-		for (var proj of this.projects){
-			if(proj.Id === id){
-				return proj;
-			}
-		}
-
-		// not found
-		return null;
 	}
 
 	public getProjects() {
 		return this.projects;
-	}
-
-	private hasProject(project: Project): boolean {
-		for (var proj of this.projects) {
-			if (
-				proj.Title === project.Title &&
-				proj.Description === project.Description &&
-				proj.People === project.People
-			) {
-				console.log(`Found Project with id ${proj.Id}`);
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	private notifyProjectsChanged() {
@@ -362,7 +329,7 @@ class RenderedProjectList
 		/** We can find out which ProjectItem to switch by using the id */
 		const draggedProjectId = event.dataTransfer!.getData('text/plain');
 		if(draggedProjectId){
-			projectStateManager.switchProjectStatus(draggedProjectId);
+			projectStateManager.evaluateProjectMove(draggedProjectId, this.status);
 		}
 
 		// to be sure remove the 'drag-in-progress' styling
@@ -502,8 +469,6 @@ class RenderedProjectItem extends UIComponent<HTMLUListElement, HTMLLIElement> i
 
 	@AutoBind
 	dragStartHandler(event: DragEvent): void {
-		console.warn('dragStartHandler triggered!');
-
 		/** Because THIS particular event is linked to a
 		 *  'dragStart' event, we have a dataTransfer prop available,
 		 *  however this is not necesarrily so for each event
@@ -516,7 +481,7 @@ class RenderedProjectItem extends UIComponent<HTMLUListElement, HTMLLIElement> i
 
 	@AutoBind
 	dragEndHandler(event: DragEvent): void {
-		console.warn('dragEndHandler triggered!');
+
 	}
 }
 
