@@ -308,12 +308,21 @@ class RenderedProjectList
 
 	@AutoBind
 	dragOverHandler(event: DragEvent): void {
+		/** preventing default is KEY in enabling the 'dropHandler',
+		 *  by default, JS will not allow eventhandling when dragging
+		 *  elements around. Thus, the dropHandler will not be accessed
+		 *  unless we explicitly state 'event.preventDefault()'
+		 */
+		event.preventDefault();
 		const ulEl = this.uiElement.querySelector('ul')!;
 		ulEl.classList.add('droppable');
 	}
+
 	dropHandler(event: DragEvent): void {
+		console.log(event.dataTransfer!.getData('text/plain'));
 		console.warn('dropHandler triggered!');
 	}
+
 	@AutoBind
 	dragLeaveHandler(event: DragEvent): void {
 		const ulEl = this.uiElement.querySelector('ul')!;
@@ -448,6 +457,15 @@ class RenderedProjectItem
 	@AutoBind
 	dragStartHandler(event: DragEvent): void {
 		console.warn('dragStartHandler triggered!');
+
+		/** Because THIS particular event is linked to a
+		 *  'dragStart' event, we have a dataTransfer prop available,
+		 *  however this is not necesarrily so for each event
+		 *  (generic object), so we have to explicitly state not null
+		 */
+		event.dataTransfer!
+			.setData('text/plain', this.project.Id); // <- id to save data
+		event.dataTransfer!.effectAllowed = 'move';
 	}
 
 	@AutoBind
