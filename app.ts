@@ -44,23 +44,28 @@ class ProjectStateManager extends StateManager<Project> {
 	public addProject(project: Project) {
 		if (!this.hasProject(project)) {
 			this.projects.push(project);
-
-			/** The collection changed, let's notify all the listeners */
-			for (const listener of this.listeners) {
-				/** (using .slice() ensures only a COPY of the array is used) */
-				listener(this.projects.slice());
-			}
+			this.notifyProjectsChanged();
 		}
 	}
 
 	public removeProject(project: Project) {
-		if (!this.hasProject(project)) {
-			let indexToRemove = this.projects.indexOf(project);
+		let indexToRemove = this.projects.indexOf(project);
 
-			if (indexToRemove > -1) {
-				this.projects.splice(indexToRemove, 1);
+		if (indexToRemove > -1) {
+			this.projects.splice(indexToRemove, 1);
+			this.notifyProjectsChanged();
+		}
+	}
+
+	public getProjectById(id: string): Project | null{
+		for (var proj of this.projects){
+			if(proj.Id === id){
+				return proj;
 			}
 		}
+
+		// not found
+		return null;
 	}
 
 	public getProjects() {
@@ -74,12 +79,20 @@ class ProjectStateManager extends StateManager<Project> {
 				proj.Description === project.Description &&
 				proj.People === project.People
 			) {
-				console.warn('This project already exists!')
+				console.log(`Found Project with id ${proj.Id}`);
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	private notifyProjectsChanged() {
+		/** The collection changed, let's notify all the listeners */
+		for (const listener of this.listeners) {
+			/** (using .slice() ensures only a COPY of the array is used) */
+			listener(this.projects.slice());
+		}
 	}
 }
 
@@ -236,8 +249,11 @@ abstract class UIComponent<T extends HTMLElement, U extends HTMLElement> {
 class RenderedProjectList
 		extends UIComponent<HTMLDivElement, HTMLElement>
 		implements IDragTarget {
+
 	// assigned project for the listener function
 	activeProjects: Project[] = [];
+
+	finishedProjects: Project[] = [];
 
 	constructor(private status: StatusEnum) {
 		super('project-list', 'app', 'beforeend', `${StatusEnum[status]}-projects`);
@@ -274,6 +290,16 @@ class RenderedProjectList
 			});
 			this.activeProjects = temp;
             this.notifyProjectsChanged();
+		})
+
+		projectStateManager.addListener((projectsCopy: Project[]) => {
+			const temp = projectsCopy.filter(proj => {
+				if(this.status === StatusEnum.finished){
+					return proj.Status === StatusEnum.finished;
+				}
+
+				return proj.Status === StatusEnum.active;
+			})
 		})
 	}
 
@@ -318,9 +344,26 @@ class RenderedProjectList
 		ulEl.classList.add('droppable');
 	}
 
+	@AutoBind
 	dropHandler(event: DragEvent): void {
+		/** We now know which ProjectItem to switch */
 		console.log(event.dataTransfer!.getData('text/plain'));
 		console.warn('dropHandler triggered!');
+
+		const draggedProjectId = event.dataTransfer!.getData('text/plain');
+		if(draggedProjectId){
+			const draggedProject = projectStateManager.getProjectById(draggedProjectId);
+			if(draggedProject !== null){
+				projectStateManager.removeProject(draggedProject);
+				draggedProject.Status = this.status;
+				// projectStateManager.addProject(draggedProject);
+			}
+		}
+
+		// to be sure remove the 'drag-in-progress' styling
+		// (should be handled by dragLeave at this point)
+		const ulEl = this.uiElement.querySelector('ul')!;
+		ulEl.classList.remove('droppable');
 	}
 
 	@AutoBind
